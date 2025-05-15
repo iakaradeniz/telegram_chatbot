@@ -1,0 +1,791 @@
+{
+  "name": "TelegramAgent",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dee63bf7-5237-4ff0-b5cd-79a7af31712c",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1740,
+        300
+      ],
+      "id": "4a03f85d-e295-4974-8c11-3f86a9a9d752",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1520,
+        180
+      ],
+      "id": "056097ac-dd97-4ef9-9010-827d076a184f",
+      "name": "Telegram1",
+      "webhookId": "4a5bd606-7ff5-4dd2-9c62-1e1bf522c51b",
+      "credentials": {
+        "telegramApi": {
+          "id": "7VlgBuyVj0awialY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.assemblyai.com/v2/upload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "4ba77a159605440bbee72f6937e0445c"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1320,
+        100
+      ],
+      "id": "9f582a07-9559-4d53-a48f-ef011a325a3a",
+      "name": "Upload to AssemblyAI"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"audio_url\": \"{{$node[\"Upload to AssemblyAI\"].json[\"upload_url\"]}}\",\n  \"language_code\": \"tr\"\n}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1100,
+        100
+      ],
+      "id": "bf8dd6de-a55c-4dbf-b1a5-f0ec0c7e8840",
+      "name": "Prepare Transcript Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.assemblyai.com/v2/transcript",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "4ba77a159605440bbee72f6937e0445c"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "audio_url",
+              "value": "={{ $json.audio_url }}"
+            },
+            {
+              "name": "language_code",
+              "value": "={{ $json.language_code }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -880,
+        100
+      ],
+      "id": "e3c4f909-c56a-4020-9f0c-49c669081771",
+      "name": "Start Transcription",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -660,
+        100
+      ],
+      "id": "e1342a9d-e26b-4e22-be32-4e1f364a6eb6",
+      "name": "Wait",
+      "webhookId": "376e26ec-31d0-4fc4-aa04-f3f2422f4d32"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.assemblyai.com/v2/transcript/{{$node[\"Start Transcription\"].json[\"id\"]}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "4ba77a159605440bbee72f6937e0445c"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -440,
+        100
+      ],
+      "id": "2bef913e-4f27-406f-af3e-c75520f18b56",
+      "name": "Get Transcript Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fc46f6a8-82b0-456c-aa58-68f74705c623",
+              "leftValue": "={{$node[\"Get Transcript Status\"].json[\"status\"]}}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        100
+      ],
+      "id": "46636ce0-36fb-489e-9c14-7be30bf3fe73",
+      "name": "Status Completed?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d7b776ae-3984-4fc4-a62f-945aa9a471f9",
+              "name": "=transcript",
+              "value": "={{$node[\"Get Transcript Status\"].json[\"text\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "76673c56-442e-415e-b658-09c8d7448599",
+      "name": "Extract Transcript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1c3b0b1-71cc-4165-9352-14a33bfc19a4",
+              "name": "input",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1520,
+        400
+      ],
+      "id": "3b84bd48-df40-4f31-b5db-1be0e40b7c10",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "73d042b7-3f18-4ef4-a01a-18261c64fce1",
+              "name": "input",
+              "value": "={{ $json.transcript }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "87ef6149-53db-4a71-9eba-12a5e8a46de1",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1980,
+        280
+      ],
+      "id": "13663015-936f-4107-947d-e4bb77ceb325",
+      "name": "Telegram Trigger1",
+      "webhookId": "57f52520-9241-4628-af1b-dd960616fc82",
+      "credentials": {
+        "telegramApi": {
+          "id": "7VlgBuyVj0awialY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input }}",
+        "options": {
+          "systemMessage": "=Bugünün tarihi: {{ $now }}\n\nSen akıllı bir yardımcı asistansın. Yanıtlarını kısa ve net tut. Araçları sadece gerektiğinde kullan.\n\nGörevler:\n\n1) Hava Durumu Sorgusu  \n• Kullanıcı “X şehrinin hava durumu nedir?” dediğinde HavaDurumu aracını çağır:  \n  { \"city\": \"Şehir Adı\" }  \n• Şehir adı eksikse önce sor.  \n\n2) Etkinlik Yönetimi  \n\n\na) Etkinlik Listeleme  \n• TumOlaylariAl aracını şu JSON ile çağır:  \n  {  \n    \"timeMin\": \"YYYY-MM-DDT00:00Z\",  \n    \"timeMax\": \"YYYY-MM-DDT23:59Z\"  \n  }  \n\n\n\nb) Yeni Etkinlik Oluşturma  \n• OlayOlustur aracını şu şekilde çağır:  \n  { \n    \"title\": \"Başlık\",  \n    \"date\": \"YYYY-MM-DDTHH:mmZ\"  \n  }\n\nc) Etkinlik Güncelleme  \n• Kullanıcı etkinlik güncellemek isterse, belirttiği tarihe göre listeden ID’yi bulup OlaylariGuncelle aracını  \n  { \n    \"id\": \"EtkinlikID\", \n    \"title\": \"Yeni Başlık\", \n    \"date\": \"YYYY-MM-DDTHH:mmZ\" \n  } ile çağır.  \n\n\nd) Etkinlik Silme  \n• “Etkinlik sil <adı>” veya “Etkinlik sil <ID>” geldiğinde:  \n  – Ada göre: listeden eşleşen ID’yi bul, gerekirse kullanıcıya seçim yaptır, sonra OlaySil aracını { \"id\": \"EtkinlikID\" } ile çağır.  \n  – ID ile: doğrudan OlaySil’i çağır.\n\nKurallar:  \n– Eksik bilgi varsa mutlaka kullanıcıdan iste.  \n– Araç çağrıları her zaman geçerli JSON formatında olsun.  \n– Gerekli değilse araç kullanma, normal metinle kısa yanıt ver.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        20,
+        340
+      ],
+      "id": "19816fbd-e5b8-4c0a-9f6a-4ddfa72f7588",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('If').item.json.message.from.id }}",
+        "text": "={{ $json.formatted }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        580,
+        380
+      ],
+      "id": "48ab0aa6-e6fb-44df-9bb8-86881735c664",
+      "name": "Telegram",
+      "webhookId": "97790f37-3329-4732-8d1f-d984a5add688",
+      "credentials": {
+        "telegramApi": {
+          "id": "7VlgBuyVj0awialY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\n// 1. AI Agent’den gelen ilk çıktıyı al\nlet txt = $input.first().json.output || '';\n\n// 2. 4000 karakter sınırı uygula\nif (txt.length > 4000) {\n  txt = txt.slice(0, 4000) + '…';\n}\n\n// 3. MarkdownV2 özel karakterleri sil\nconst removeRegex = /([_*\\[\\]()~`>#+\\-=|{}.!])/g;\nconst formatted = txt.replace(removeRegex, '');\n\n// 4. Bir sonraki node için \"formatted\" alanını JSON içinde dön\nreturn [{\n  json: {\n    ...$input.first().json,\n    formatted,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        380
+      ],
+      "id": "77d01aa2-ee32-4fc8-93a6-1af27ffec452",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Content-Type",
+              "valueProvider": "fieldValue",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-KEY",
+              "valueProvider": "fieldValue",
+              "value": "731f78a99f0b51d4eb5e1b7f313484507f0f1ef6"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q\": \"{{ $json.input }}\",\n  \"gl\": \"tr\", \n  \"hl\": \"tr\"\n} "
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        60,
+        680
+      ],
+      "id": "d88ea0fc-18ee-4ab6-b63c-08d569bcb824",
+      "name": "HavaDurumu"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Yeni Takvim olayı oluşturmak için bu aracı kullan",
+        "calendar": {
+          "__rl": true,
+          "value": "ismailalperkaradeniz@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ismailalperkaradeniz@gmail.com"
+        },
+        "start": "={{ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "summary": "={{ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        220,
+        660
+      ],
+      "id": "a395f901-d45a-490e-a7f6-6670ffb13950",
+      "name": "OlayOlustur",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ktCKUEs9qIuKnMCc",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "ismailalperkaradeniz@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ismailalperkaradeniz@gmail.com"
+        },
+        "eventId": "={{ $fromAI('Event_ID', `it is the id of the specific event`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        380,
+        660
+      ],
+      "id": "42ca208d-a2ab-43da-b82f-75dd21caf9f3",
+      "name": "OlaySil",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ktCKUEs9qIuKnMCc",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-3-5-haiku-20241022",
+          "mode": "list",
+          "cachedResultName": "Claude 3.5 Haiku"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -520,
+        620
+      ],
+      "id": "92e64e7b-1e2b-4f4c-9009-52e42b854d42",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "G2LR533xUCN8EYVw",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "ismailalperkaradeniz@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ismailalperkaradeniz@gmail.com"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ $now.plus({ week: 4 }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        540,
+        660
+      ],
+      "id": "ca216035-1072-4c99-bfd5-e5e420b9af85",
+      "name": "TumOlaylariAl",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ktCKUEs9qIuKnMCc",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "ismailalperkaradeniz@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ismailalperkaradeniz@gmail.com"
+        },
+        "eventId": "={{ $fromAI('Event_ID', `it is the id of the specific event`, 'string') }}",
+        "updateFields": {
+          "end": "={{ $fromAI('End', `it is the event date ending time`, 'string') }}",
+          "start": "={{ $fromAI('Start', `it is the event date starting time`, 'string') }}",
+          "summary": "={{ $fromAI('eventName', `the name of the calendar event`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        620
+      ],
+      "id": "4098e982-1f64-4615-8960-d848e0d8f87a",
+      "name": "OlaylariGuncelle",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ktCKUEs9qIuKnMCc",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        [
+          {
+            "node": "Upload to AssemblyAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to AssemblyAI": {
+      "main": [
+        [
+          {
+            "node": "Prepare Transcript Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Transcript Request": {
+      "main": [
+        [
+          {
+            "node": "Start Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Transcription": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Transcript Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Transcript Status": {
+      "main": [
+        [
+          {
+            "node": "Status Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Completed?": {
+      "main": [
+        [
+          {
+            "node": "Extract Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Transcript": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HavaDurumu": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OlayOlustur": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OlaySil": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TumOlaylariAl": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OlaylariGuncelle": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9c2efd98-4c80-4b63-bf04-7aa69bbde7c2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9e1620c13853d0788eac8564bcc6400454fd0b728a51f352674a6013e895c9de"
+  },
+  "id": "juDiYa7NfD7OMH8Q",
+  "tags": []
+}
